@@ -1,0 +1,11 @@
+{
+  "name": "vmw",
+  "version": "1.0.0",
+  "description": "VMware manipulation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Karim MacDonald",
+  "license": "ISC"
+}
