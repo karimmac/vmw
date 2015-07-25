@@ -133,14 +133,17 @@ function resetVM(vmxPath, autoStart) {
 function vmrun(args) {
   args = ['/Applications/VMware Fusion.app/Contents/Library/vmrun'].concat(args);
   args = _.map(args, function(v) {
-    var arg = v.trim();
-    return (arg.indexOf(' ') === -1) ? arg : '"' + arg.replace(/^\"(.*)\"$/, '$1') + '"';
+    var arg = v.replace(/\\/g, '\\\\');
+    arg = (arg.indexOf(' ') === -1) ? arg : '"' + arg.replace(/^\"(.*)\"$/, '$1') + '"';
+    arg = (arg.length == 0) ? '""' : arg;
+    return arg;
   });
   console.log(args.join(' '));
 
   var deferred = Q.defer();
   exec(args.join(' '), function(error, stdout) {
     if (error) {
+      console.log('\n' + error);
       deferred.reject(new Error(error));
     } else {
       console.log(stdout);
