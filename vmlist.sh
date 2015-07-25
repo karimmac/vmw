@@ -6,6 +6,6 @@ echo {
     bn=${bn%.*}
     bn=${bn// /_}
     bn=${bn//./_}
-    echo "  \"${bn}\": \"${l}\","
+    echo "  \"${bn}\": { \"path\": \"${l}\" },"
   done | sed -e '$s/,//'
 echo }

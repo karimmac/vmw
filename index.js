@@ -12,46 +12,99 @@ main();
 function main() {
   var args = process.argv.slice(2);
 
-  var command = (args[0] || '').toLowerCase();
-  if (isHelp(command)) {
-    command = '-?';
+  var command = {
+    verb: args[0] || '',
+    vmName: args[1],
+    args: args.slice(2) || []
+  };
+
+  if (isHelp(command.verb)) {
+    command.verb = '-?';
   }
 
-  if (commandRequiresVmxPath(command)) {
-    var vmxPath = getVmxPath(args[1]);
-    if (!vmxPath) {
-      printHelp();
-      return;
-    }
+  command.vmxPath = getVmxPath(command.vmName);
 
-    switch (command) {
-      case '':
-        printHelp();
-        break;
+  if (!isValid(command)) {
+    printHelp();
+    return;
+  }
 
-      case 'reset':
-        resetVM(vmxPath, args[2]);
-        break;
-
-      default:
-        args[1] = vmxPath;
-        vmrun(args);
-    }
+  if (command.verb == 'reset') {
+    resetVM(command.vmxPath, command.args[0]);
   } else {
-    vmrun([command]);
+    runCommand(command);
   }
 }
 
-function isHelp(command) {
-  return _.contains(['help', '?'], command.replace(/^-+/,''));
+function runCommand(command) {
+  var args = [];
+
+  if (requiresAuth(command.verb)) {
+    args = args.concat(getCredentials(command.vmName));
+  }
+
+  args = args
+    .concat(command.verb)
+    .concat(command.vmxPath || [])
+    .concat(command.args);
+
+  vmrun(args);
 }
 
-function commandRequiresVmxPath(command) {
-  return !_.contains(['-?', 'list'], command);
+function isValid(command) {
+  if (requiresVmxPath(command.verb) && !command.vmxPath) {
+    return false;
+  }
+
+  return true;
+}
+
+function isHelp(verb) {
+  return _.contains(['help', '?'], verb.toLowerCase().replace(/^-+/,''));
+}
+
+function requiresVmxPath(verb) {
+  return !_.contains(['-?', 'list'], verb);
+}
+
+function requiresAuth(verb) {
+  return _.contains([
+    'CopyFileFromGuestToHost',
+    'CopyFileFromHostToGuest',
+    'CreateTempfileInGuest',
+    'addSharedFolder',
+    'createDirectoryInGuest',
+    'deleteDirectoryInGuest',
+    'deleteFileInGuest',
+    'directoryExistsInGuest',
+    'disableSharedFolders',
+    'enableSharedFolders',
+    'fileExistsInGuest',
+    'killProcessInGuest',
+    'listDirectoryInGuest',
+    'listProcessesInGuest',
+    'readVariable',
+    'removeSharedFolder',
+    'renameFileInGuest',
+    'runProgramInGuest',
+    'runScriptInGuest',
+    'setSharedFolderState',
+    'writeVariable'
+  ], verb);
+}
+
+function getCredentials(name) {
+  var data = vmData[name];
+
+  if (data && data.username && data.password) {
+    return ['-gu', data.username, '-gp', data.password];
+  } else {
+    return [];
+  }
 }
 
 function getVmxPath(name) {
-  return vmData[name];
+  return (vmData[name] || {}).path;
 }
 
 function printHelp() {
