@@ -5,52 +5,41 @@ var _ = require('underscore');
 var exec = require('child_process').exec;
 var fs = require('fs');
 var path = require('path');
-
-var vmData = {};
+var vmData = require('./vms.json')
 
 main();
 
 function main() {
-  var file = __dirname + '/vms.json';
+  var args = process.argv.slice(2);
 
-  fs.readFile(file, 'utf8', function(err, data) {
-    if (err) {
-      console.log('' + err);
+  var command = (args[0] || '').toLowerCase();
+  if (isHelp(command)) {
+    command = '-?';
+  }
+
+  if (commandRequiresVmxPath(command)) {
+    var vmxPath = getVmxPath(args[1]);
+    if (!vmxPath) {
+      printHelp();
       return;
     }
 
-    var args = process.argv.slice(2);
-    vmData = JSON.parse(data);
-
-    var command = (args[0] || '').toLowerCase();
-    if (isHelp(command)) {
-      command = '-?';
-    }
-
-    if (commandRequiresVmxPath(command)) {
-      var vmxPath = getVmxPath(args[1]);
-      if (!vmxPath) {
+    switch (command) {
+      case '':
         printHelp();
-        return;
-      }
+        break;
 
-      switch (command) {
-        case '':
-          printHelp();
-          break;
+      case 'reset':
+        resetVM(vmxPath, args[2]);
+        break;
 
-        case 'reset':
-          resetVM(vmxPath, args[2]);
-          break;
-
-        default:
-          args[1] = vmxPath;
-          vmrun(args);
-      }
-    } else {
-      vmrun([command]);
+      default:
+        args[1] = vmxPath;
+        vmrun(args);
     }
-  });
+  } else {
+    vmrun([command]);
+  }
 }
 
 function isHelp(command) {
@@ -108,4 +97,3 @@ function vmrun(args) {
 
   return deferred.promise;
 }
-
