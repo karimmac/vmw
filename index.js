@@ -29,8 +29,8 @@ function main() {
     return;
   }
 
-  if (command.verb == 'reset') {
-    resetVM(command.vmxPath, command.args[0]);
+  if (command.verb == 'revert') {
+    revertVM(command);
   } else {
     runCommand(command);
   }
@@ -83,13 +83,11 @@ function requiresAuth(verb) {
     'killProcessInGuest',
     'listDirectoryInGuest',
     'listProcessesInGuest',
-    'readVariable',
     'removeSharedFolder',
     'renameFileInGuest',
     'runProgramInGuest',
     'runScriptInGuest',
-    'setSharedFolderState',
-    'writeVariable'
+    'setSharedFolderState'
   ], verb);
 }
 
@@ -112,19 +110,20 @@ function printHelp() {
   var baseName = path.basename(process.argv[1]);
 
   console.log('Usage:');
-  console.log('  ' + baseName + ' reset ' + keys + ' [on]');
+  console.log('  ' + baseName + ' revert ' + keys + ' [on]');
   console.log('  ' + baseName + ' <cmd> ' + keys + ' <other args> # vmrun a command');
   console.log('  ' + baseName + ' help # Show vmrun help');
   console.log('');
 }
 
-function resetVM(vmxPath, autoStart) {
-  autoStart = (autoStart === 'on');
-  vmrun(['listSnapshots', vmxPath])
-    .then(function() { return vmrun(['revertToSnapshot', vmxPath, 'Base']); })
+function revertVM(command) {
+  var autoStart = (command.args[0] === 'on');
+  var snapshot = (command.args[1] || 'Base');
+  vmrun(['listSnapshots', command.vmxPath])
+    .then(function() { return vmrun(['revertToSnapshot', command.vmxPath, snapshot]); })
     .then(function() {
       if (autoStart) {
-        return vmrun(['start', vmxPath]);
+        return vmrun(['start', command.vmxPath]);
       }
     })
   .done();
