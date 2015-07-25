@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-var fs = require('fs');
+var Q = require('q');
 var _ = require('underscore');
 var exec = require('child_process').exec;
-var Q = require('q');
+var fs = require('fs');
+var path = require('path');
 
 var vmData = {};
 
@@ -26,7 +27,7 @@ function main() {
       vmrun(['-?']);
     }
 
-    var vmxPath = getPath(args[1]);
+    var vmxPath = getVmxPath(args[1]);
     if (!vmxPath) {
       printHelp();
       return;
@@ -55,34 +56,35 @@ function isHelp(command) {
   );
 }
 
-function getPath(name) {
+function getVmxPath(name) {
   return vmData[name];
 }
 
 function printHelp() {
-  var keys = _.keys(vmData).join("|");
+  var keys = _.keys(vmData).join('|');
+  var baseName = path.basename(process.argv[1]);
 
-  console.log("Usage:");
-  console.log("  vm.js reset " + keys + " [on]");
-  console.log("  vm.js <cmd> " + keys + " <other args> # vmrun a command");
-  console.log("  vm.js help # Show vmrun help");
-  console.log("");
+  console.log('Usage:');
+  console.log('  ' + baseName + ' reset ' + keys + ' [on]');
+  console.log('  ' + baseName + ' <cmd> ' + keys + ' <other args> # vmrun a command');
+  console.log('  ' + baseName + ' help # Show vmrun help');
+  console.log('');
 }
 
 function resetVM(vmxPath, autoStart) {
   autoStart = (autoStart === 'on');
-  vmrun(["listSnapshots", vmxPath])
-    .then(function() { return vmrun(["revertToSnapshot", vmxPath, "Working"]); })
+  vmrun(['listSnapshots', vmxPath])
+    .then(function() { return vmrun(['revertToSnapshot', vmxPath, 'Base']); })
     .then(function() {
       if (autoStart) {
-        return vmrun(["start", vmxPath]);
+        return vmrun(['start', vmxPath]);
       }
     })
   .done();
 }
 
 function vmrun(args) {
-  args = ["/Applications/VMware Fusion.app/Contents/Library/vmrun"].concat(args);
+  args = ['/Applications/VMware Fusion.app/Contents/Library/vmrun'].concat(args);
   args = _.map(args, function(v) {
     var arg = v.trim();
     return (arg.indexOf(' ') === -1) ? arg : '"' + arg.replace(/^\"(.*)\"$/, '$1') + '"';
