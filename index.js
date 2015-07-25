@@ -24,11 +24,11 @@ function main() {
 
     var command = (args[0] || '').toLowerCase();
     if (isHelp(command)) {
-      vmrun(['-?']);
+      args[0] = '-?';
     }
 
     var vmxPath = getVmxPath(args[1]);
-    if (!vmxPath) {
+    if (args[1] && !vmxPath) {
       printHelp();
       return;
     }
@@ -43,7 +43,9 @@ function main() {
         break;
 
       default:
-        args[1] = vmxPath;
+        if (vmxPath) {
+          args[1] = vmxPath;
+        }
         vmrun(args);
     }
   });
