@@ -24,38 +24,41 @@ function main() {
 
     var command = (args[0] || '').toLowerCase();
     if (isHelp(command)) {
-      args[0] = '-?';
+      command = '-?';
     }
 
-    var vmxPath = getVmxPath(args[1]);
-    if (args[1] && !vmxPath) {
-      printHelp();
-      return;
-    }
-
-    switch (command) {
-      case 'reset':
-        resetVM(vmxPath, args[2]);
-        break;
-
-      case '':
+    if (commandRequiresVmxPath(command)) {
+      var vmxPath = getVmxPath(args[1]);
+      if (!vmxPath) {
         printHelp();
-        break;
+        return;
+      }
 
-      default:
-        if (vmxPath) {
+      switch (command) {
+        case '':
+          printHelp();
+          break;
+
+        case 'reset':
+          resetVM(vmxPath, args[2]);
+          break;
+
+        default:
           args[1] = vmxPath;
-        }
-        vmrun(args);
+          vmrun(args);
+      }
+    } else {
+      vmrun([command]);
     }
   });
 }
 
 function isHelp(command) {
-  return _.contains(
-    ['help', '?'],
-    command.replace(/^-+/,'')
-  );
+  return _.contains(['help', '?'], command.replace(/^-+/,''));
+}
+
+function commandRequiresVmxPath(command) {
+  return !_.contains(['-?', 'list'], command);
 }
 
 function getVmxPath(name) {
