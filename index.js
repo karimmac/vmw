@@ -7,6 +7,11 @@ var fs = require('fs');
 var path = require('path');
 var vmData = require('./vms.json')
 
+var customCommands = {
+  revert: revertVM,
+  sharedfolders: enableSharedFolders
+};
+
 main();
 
 function main() {
@@ -15,7 +20,7 @@ function main() {
   var command = {
     verb: args[0] || '',
     vmName: args[1],
-    args: args.slice(2) || []
+    args: args.slice(2)
   };
 
   if (isHelp(command.verb)) {
@@ -29,8 +34,8 @@ function main() {
     return;
   }
 
-  if (command.verb == 'revert') {
-    revertVM(command);
+  if (isCustom(command.verb)) {
+    runCustom(command);
   } else {
     runCommand(command);
   }
@@ -46,9 +51,20 @@ function runCommand(command) {
   args = args
     .concat(command.verb)
     .concat(command.vmxPath || [])
-    .concat(command.args);
+    .concat(command.args || []);
 
-  vmrun(args);
+  return vmrun(args);
+}
+
+function runCustom(command) {
+  var action = customCommands[command.verb.toLowerCase()];
+  if (action) {
+    action(command);
+  }
+}
+
+function isCustom(verb) {
+  return !!customCommands[verb.toLowerCase()];
 }
 
 function isValid(command) {
@@ -126,7 +142,22 @@ function revertVM(command) {
         return vmrun(['start', command.vmxPath]);
       }
     })
-  .done();
+    .done();
+}
+
+function enableSharedFolders(command) {
+  var c = { vmName: command.vmName, vmxPath: command.vmxPath };
+  var enable = (command.args[0] === 'on');
+  var enableVerb = (enable ? 'enable' : 'disable') + 'SharedFolders';
+
+  runCommand(_.extend({verb: enableVerb}, c))
+    .then(function() {
+      return runCommand(_.extend({
+        verb: 'writeVariable',
+        args: ['runtimeConfig', 'hgfs.mapRootShare', enable.toString()]
+      }, c));
+    })
+    .done();
 }
 
 function vmrun(args) {
